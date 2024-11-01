@@ -462,9 +462,24 @@ FILE ( GLOB PBRT_SOURCE
   src/textures/*
   src/media/*
   )
+  
+SET (EMBREE_FILES
+  src/ext/tinyEmbree/api.h
+  src/ext/tinyEmbree/cbench.cpp
+  src/ext/tinyEmbree/common.h
+  src/ext/tinyEmbree/knn.cpp
+  src/ext/tinyEmbree/knn.h
+  src/ext/tinyEmbree/point_query.h
+  src/ext/tinyEmbree/raytrace.cpp
+  src/ext/tinyEmbree/raytrace.h
+  src/ext/tinyEmbree/scene.cpp
+  src/ext/tinyEmbree/scene.h
+
+)
 
 INCLUDE_DIRECTORIES ( src )
 INCLUDE_DIRECTORIES ( src/core )
+INCLUDE_DIRECTORIES ( src/ext/tinyEmbree )
 
 # Visual Studio source folders
 SOURCE_GROUP (core REGULAR_EXPRESSION src/core/.*)
@@ -479,6 +494,10 @@ SOURCE_GROUP (samplers REGULAR_EXPRESSION src/samplers/.*)
 SOURCE_GROUP (shapes REGULAR_EXPRESSION src/shapes/.*)
 SOURCE_GROUP (textures REGULAR_EXPRESSION src/textures/.*)
 SOURCE_GROUP (media REGULAR_EXPRESSION src/media/.*)
+SOURCE_GROUP (TinyEmbree REGULAR_EXPRESSION src/ext/tinyEmbree/.*)
+
+
+
 
 ###########################################################################
 # pbrt libraries and executables
@@ -487,9 +506,13 @@ ADD_LIBRARY ( pbrt STATIC
   ${PBRT_YACC_LEX_SOURCE}
   ${PBRT_CORE_SOURCE}
   ${PBRT_CORE_HEADERS}
+  ${EMBREE_FILES}
   ${PBRT_SOURCE}
   )
 ADD_SANITIZERS ( pbrt )
+
+FIND_PACKAGE(embree 3.0 REQUIRED)
+INCLUDE_DIRECTORIES(${EMBREE_INCLUDE_DIRS})
 
 # A non-exhaustive but pretty representative set..
 # Note that we work-around shoddy c++11 support in MSVC2013
@@ -509,6 +532,16 @@ IF (WIN32)
   SET_TARGET_PROPERTIES ( pbrt PROPERTIES OUTPUT_NAME libpbrt )
 ENDIF()
 
+#add Onnx
+
+set (ONNXRUNTIME_ROOTDIR src/ext/onnxruntime/onnxruntime-win-x64)
+
+include_directories("${ONNXRUNTIME_ROOTDIR}/include")                           # Pre-built package 
+
+link_directories("${ONNXRUNTIME_ROOTDIR}/lib")
+
+find_library(ONNX_LIB onnxruntime HINTS ${ONNXRUNTIME_ROOTDIR}/lib)
+
 SET(ALL_PBRT_LIBS
   pbrt
   ${CMAKE_THREAD_LIBS_INIT}
@@ -516,6 +549,8 @@ SET(ALL_PBRT_LIBS
   glog
   Ptex_static
   ${ZLIB_LIBRARY}
+  ${ONNX_LIB}
+  ${EMBREE_LIBRARIES}
 )
 
 # Main renderer
@@ -543,6 +578,19 @@ ADD_SANITIZERS ( obj2pbrt )
 
 ADD_EXECUTABLE ( cyhair2pbrt src/tools/cyhair2pbrt.cpp )
 ADD_SANITIZERS ( cyhair2pbrt )
+
+#########################
+
+#nanoflann
+
+include_directories(src/ext/nanoflann)  
+
+#npy
+
+include_directories(src/ext/npy)  
+
+#########################
+
 
 # Unit test
 
